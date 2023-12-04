@@ -447,10 +447,7 @@
       }
       else if (BALL_Y >= 0) {
 
-        // TOP
-
-        // TOP_PADDLE_LEFT = TOP_PADDLE_X - (TOP_PADDLE_WIDTH/2);
-        // TOP_PADDLE_RIGHT = TOP_PADDLE_X + (TOP_PADDLE_WIDTH/2);
+      
 
         for (var brick = 3; brick < 34; brick++){
           BRICK_X = OBJECTS[brick][3][0];
@@ -473,47 +470,32 @@
             }
           }
         }
-        // if (BALL_X >= TOP_PADDLE_LEFT && BALL_X <= TOP_PADDLE_RIGHT) {
-
-        //   // console.log('top bounce')
-
-        //   // YES, REFLECT
-        //   BALLDIRECTION = -BALLDIRECTION;
-
-        // } else {
-
-        //   // SCORE!
-        //   // score('keen');
-
-        //   return;
-
-        // }
 
 
       } else if (BALL_Y <= -.85) {
 
         // BOTTOM
-        BALLDIRECTION = -BALLDIRECTION;
+        // BALLDIRECTION = -BALLDIRECTION;
 
-        // BOTTOM_PADDLE_LEFT = BOTTOM_PADDLE_X - (BOTTOM_PADDLE_WIDTH/2);
-        // BOTTOM_PADDLE_RIGHT = BOTTOM_PADDLE_X + (BOTTOM_PADDLE_WIDTH/2);
+        BOTTOM_PADDLE_LEFT = BOTTOM_PADDLE_X - (BOTTOM_PADDLE_WIDTH/2);
+        BOTTOM_PADDLE_RIGHT = BOTTOM_PADDLE_X + (BOTTOM_PADDLE_WIDTH/2);
 
-        // // LET'S CHECK IF A PADDLE IS THERE
-        // if (BALL_X >= BOTTOM_PADDLE_LEFT && BALL_X <= BOTTOM_PADDLE_RIGHT) {
+        // LET'S CHECK IF A PADDLE IS THERE
+        if (BALL_X >= BOTTOM_PADDLE_LEFT && BALL_X <= BOTTOM_PADDLE_RIGHT) {
 
-        //   // console.log('bottom bounce')
+          // console.log('bottom bounce')
 
-        //   // YES, REFLECT
-        //   BALLDIRECTION = -BALLDIRECTION;
+          // YES, REFLECT
+          BALLDIRECTION = -BALLDIRECTION;
 
-        // } else {
+        } else {
 
-        //   // SCORE!
-        //   score('comp');
+          // SCORE!
+          score('comp');
 
-        //   return;
+          return;
 
-        // }
+        }
 
       }
 
