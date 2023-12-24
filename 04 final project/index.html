@@ -3,28 +3,33 @@
     
     <style>
 
-      html, body {    
-        background-color:#2972bb;
+      html, body {  
+        background: url('clear_blue_sky_by_nescio17_d656th1-pre.jpg');   
+        background-color:#5529bb;
         margin: 0;
         padding: 0;
         height: 100%;
+        background-size: cover;
+        background-repeat: no-repeat;
         overflow: hidden !important;  
       }
 
       #computerwrist {
 
-        /* background: url('blue-sky-background-with-white-clouds-700-208317284.jpg'); */
-        width:1234px;
-        height:814px;
+        width:800px;
+        height:800px;
         position: absolute;
         top: 50%;
         left: 50%;
+        background-size: cover;
+        background-repeat: no-repeat;
         transform: translate(-50%, -50%);
       }
 
       #c {
-        width:620px;
-        height:328px;
+        background: url('brick wall animation.jpeg'); 
+        width:700px;
+        height:450px;
         position: absolute;
         top: 50%;
         left: 50%;
@@ -32,22 +37,29 @@
       }
 
       .score {
-        color: rgb(0,255,0);
+        
+        color: rgb(219, 20, 20);
         font-size: 30px;
         font-family: monospace;
         font-weight: bold;
       }
 
-      #keen {
+      #level {
         position: relative;
-        top: 200px;
-        left: 445px;
+        top: 100px;
+        left: 50px;
       }
 
-      #comp {
+      #score {
         position: relative;
-        top: 200px;
-        left: 855px;
+        top: 100px;
+        left: 200px;
+      }
+
+      #lives {
+        position: relative;
+        top: 100px;
+        left: 350px;
       }
 
       .result {
@@ -61,7 +73,7 @@
       }
 
       #overlay {
-        background-color: rgba(0,0,0,0.7);
+        background-color: rgba(81, 7, 7, 0.7);
         position: absolute;
         top: 0px;
         left: 0px;
@@ -163,30 +175,51 @@
       SCALE = 1;
       STEP = .1;
       MAX_SCORE = 5;
+      MAX_LEVELS = 4;
+      LEVEL = 0;
       STOPPED = false;
+      LOST = false;
+      LEVEL_WON = false;
+      MAX_LIVES = 5;
+      LIVES = MAX_LIVES;
+      SCORE = 0;
+      NEW_GAME_PLUS = "";
 
+      BALLS = [];
+      PADDLES = [];
+      BRICKS = [];
 
-      //Brick colors
-      var colors = [[0,1,1,1], [0,1,0,1], [1,0,1,1], [1,0,0,1]];
-
-      OBJECTS = [];
-      OBJECTS.push( createPaddle( [0.,1.,0.,1.], [5., 0.9, 0.]) ); // TOP PADDLE
-      OBJECTS.push( createPaddle( [0.,1.,0.,1.], [0., -0.9, 0.]) ); // BOTTOM PADDLE
-      OBJECTS.push( createBall( [0., 1., 0., 1.], [0., 0., 0.]) );
-      for(var i = 0; i < 4; i++){
-        for(var j = 0; j < 8; j++){
-          OBJECTS.push( createBrick ( colors[i], [-0.6 + .205 * j, 0.65 - 0.14 * i, 0.]) ); // bricks
-        }
-      }
-
-      resetBall(1);
-
-
+      resetGame();
       animate();
-
     };
 
-    // TODO Part 1
+    function resetGame(){
+      BALLS = [];
+      PADDLES = [];
+      BRICKS = [];
+      PADDLES.push( createPaddle( [0.,1.,0.,1.], [5., 0.9, 0.]) ); // TOP PADDLE
+      PADDLES.push( createPaddle( [0.,1.,0.,1.], [0., -0.9, 0.]) ); // BOTTOM PADDLE
+      BALLS.push( createBall( [0., 1., 0., 1.], [0., 0., 0.]) );
+      resetLevels();
+      resetBall(1);
+      LIVES = MAX_LIVES;
+
+      document.getElementById('lives').innerText = 'Lives ' + LIVES;
+    }
+
+    function resetLevels(){
+      LEVEL = 0;
+      var colors = [[0,1,1,1], [0,1,0,1], [1,0,1,1], [1,0,0,1]];
+      for(var l = 0; l < MAX_LEVELS; l++){
+        BRICKS[l] = [];
+        for(var i = 0; i < 4; i++){
+          for(var j = 0; j < 8; j++){
+            BRICKS[l].push( createBrick ( colors[l], [-0.72 + .205 * j, 0.65 - 0.14 * i, 0.]) ); // bricks
+          }
+        }
+      }
+    }
+
     function createPaddle(color, offset) {
       //************************************************************//
       //
@@ -293,9 +326,9 @@
 
     function animate() {
 
-      if (STOPPED) {
-        return;
-      }
+      // if (STOPPED) {
+      //   return;
+      // }
 
       requestAnimationFrame( animate );
 
@@ -304,9 +337,15 @@
       gl.clear( gl.COLOR_BUFFER_BIT );
 
       // TODO Part 4 and 5
-      updateBall()
-      // updateComputer()
+      if(!STOPPED){
+        updateBall();
+        hasLevelWon();
+      }
 
+      var OBJECTS = [];
+      OBJECTS = OBJECTS.concat(PADDLES);
+      OBJECTS = OBJECTS.concat(BALLS);
+      OBJECTS = OBJECTS.concat(BRICKS[LEVEL]);
       for(var o=0; o<OBJECTS.length; o++) {
 
         var current = OBJECTS[o];
@@ -353,82 +392,70 @@
         gl.uniformMatrix4fv( u_transform, false, current_transform );
 
 
-
-        //************************************************************//
-        //
-        // DRAW!
-        //
-        // gl.drawArrays( gl.LINES, 0, 6 );
-
-        // TODO Part 2
         gl.drawElements( renderingPrimative, VERTEXCOUNT, gl.UNSIGNED_BYTE, 0);
       }
 
     }
 
-
-
-
     function resetBall(direction) {
-
-      OBJECTS[2][3][0] = Math.random() / 10.; // SET TO CENTER
-      OBJECTS[2][3][1] = Math.random() / 10.;
+      BALLS[0][3][0] = Math.random() / 10.; // SET TO CENTER
+      BALLS[0][3][1] = Math.random() / 10.;
 
       BALLDIRECTION = (Math.PI / 8) + Math.random();
       BALLDIRECTION *= direction;
-
     };
 
 
     function score(who) {
-
-      // console.log(who, 'scored!')
-
-      var old_score = document.getElementById(who).innerText;
-      document.getElementById(who).innerText = parseInt(old_score) + 1;
-
-      if (parseInt(old_score) == MAX_SCORE-1) {
-
-        STOPPED = true;
-
-        document.getElementById('overlay').style.display = 'block';
-
-        if (who == 'keen') {
-          document.getElementById('won').style.display = 'block';
-        } else if (who == 'comp') {
-          document.getElementById('lost').style.display = 'block';
-        }
-
-      }
-
-      if (who == 'keen') {
-
-        resetBall(1);
-      
-      } else if (who == 'comp') {
-      
+      if (who == 'lives') {
+        var audio = new Audio("dry-fart.mp3");
+        audio.play();
+        LIVES -= 1;
+        document.getElementById(who).innerText = "Lives " + LIVES;
         resetBall(-1);
-      
+        if(LIVES <= 0)
+        {
+          var audio = new Audio("mixkit-retro-arcade-game-over-470.wav");
+          audio.play();
+          document.getElementById('overlay').style.display = 'block';
+          document.getElementById('lost').style.display = 'block';
+          STOPPED = true;
+          LOST = true;
+        }
       }
-      
     }
 
-
+    function hasLevelWon(){
+        var destroyed = 0;
+          for (var brick = 0; brick < 32; brick++){
+            if(BRICKS[LEVEL][brick][4] == 0)
+              destroyed++;
+          }
+          if(destroyed >= 32)
+          {
+            var audio = new Audio("anime-wow-sound-effect.mp3");
+            audio.play();
+            STOPPED = true;
+            LEVEL_WON = true;
+            document.getElementById('overlay').style.display = 'block';
+            if(LEVEL >= (MAX_LEVELS - 1)){
+              var audio = new Audio("applause-2-31567.mp3");
+              audio.play();
+              document.getElementById('won').style.display = 'block';
+            }
+            else
+              document.getElementById('level clear').style.display = 'block';
+          }
+      }
 
     function updateBall() {
 
-      BALL_X = OBJECTS[2][3][0];
-      BALL_Y = OBJECTS[2][3][1];
+      BALL_X = BALLS[0][3][0];
+      BALL_Y = BALLS[0][3][1];
 
-      TOP_PADDLE_X = OBJECTS[0][3][0];
-      TOP_PADDLE_Y = OBJECTS[0][3][1];
-      TOP_PADDLE_WIDTH = 0.2;
-
-      BOTTOM_PADDLE_X = OBJECTS[1][3][0];
-      BOTTOM_PADDLE_Y = OBJECTS[1][3][1];
+      BOTTOM_PADDLE_X = PADDLES[1][3][0];
+      BOTTOM_PADDLE_Y = PADDLES[1][3][1];
       BOTTOM_PADDLE_WIDTH = 0.2;
-
-
 
       if (BALL_X >= .98) {
 
@@ -446,32 +473,10 @@
 
       }
       else if (BALL_Y >= 0) {
-
-      
-
-        for (var brick = 3; brick < 34; brick++){
-          BRICK_X = OBJECTS[brick][3][0];
-          BRICK_Y = OBJECTS[brick][3][1];
-          BRICK_WIDTH = 0.2;
-          BRICK_HEIGHT = 0.2;
-
-          BRICK_LEFT = BRICK_X - (BRICK_WIDTH/2);
-          BRICK_RIGHT = BRICK_X + (BRICK_WIDTH/2);
-          BRICK_BOTTOM = BRICK_Y - (BRICK_HEIGHT/2);
-          BRICK_TOP = BRICK_Y + (BRICK_HEIGHT/2);
-
-          if (BALL_X >= BRICK_LEFT && BALL_X <= BRICK_RIGHT) {
-            if(BALL_Y >= BRICK_BOTTOM && BALL_Y < BRICK_TOP){
-          console.log('brick ' + brick + ' bounce\nball x: ' + BALL_Y, ' ball y: ' + BALL_Y + 
-          '\nbrick left: ' + BRICK_LEFT + ' brick right: ' + BRICK_RIGHT + '\nbrick bottom: ' + BRICK_BOTTOM +
-          ' brick top: ' + BRICK_TOP)
+        if(collided(BALL_X, BALL_Y)){
           // YES, REFLECT
-              BALLDIRECTION = -BALLDIRECTION;
-            }
-          }
+          BALLDIRECTION = -BALLDIRECTION;
         }
-
-
       } else if (BALL_Y <= -.85) {
 
         // BOTTOM
@@ -487,47 +492,147 @@
 
           // YES, REFLECT
           BALLDIRECTION = -BALLDIRECTION;
+          var audio = new Audio("Branch Break-SoundBible.com-1964864165.wav");
+          audio.play();
 
         } else {
 
           // SCORE!
-          score('comp');
+          score('lives');
 
           return;
-
         }
-
       }
 
-
       // UPDATE BALL POSITION
-      OBJECTS[2][3][0] += Math.cos(BALLDIRECTION) * STEP * 0.05;
-      OBJECTS[2][3][1] += Math.sin(BALLDIRECTION) * STEP * 0.05;
+      BALLS[0][3][0] += Math.cos(BALLDIRECTION) * STEP * 0.085;
+      BALLS[0][3][1] += Math.sin(BALLDIRECTION) * STEP * 0.085;
 
     }
 
+    function collided(BALL_X, BALL_Y){
+      var collide = false;
+      BALL_WIDTH = 0.1;
+      BALL_HEIGHT = 0.1;
+      BALL_LEFT = BALL_X - (BALL_WIDTH/2);
+      BALL_RIGHT = BALL_X + (BALL_WIDTH/2);
+      BALL_BOTTOM = BALL_Y - (BALL_HEIGHT/2);
+      BALL_TOP = BALL_Y + (BALL_HEIGHT/2);
+
+      for (var brick = 0; brick < 32; brick++){
+        BRICK_X = BRICKS[LEVEL][brick][3][0];
+        BRICK_Y = BRICKS[LEVEL][brick][3][1];
+        BRICK_WIDTH = 0.15;
+        BRICK_HEIGHT = 0.12;
+
+        BRICK_VERTEX = BRICKS[LEVEL][brick][4];
+
+        BRICK_LEFT = BRICK_X - (BRICK_WIDTH/2);
+        BRICK_RIGHT = BRICK_X + (BRICK_WIDTH/2);
+        BRICK_BOTTOM = BRICK_Y - (BRICK_HEIGHT/2);
+        BRICK_TOP = BRICK_Y + (BRICK_HEIGHT/2);
+
+        if (BRICK_VERTEX != 0 && BALL_RIGHT >= BRICK_LEFT && BALL_LEFT <= BRICK_RIGHT &&
+            BALL_TOP >= BRICK_BOTTOM && BALL_BOTTOM < BRICK_TOP){
+            console.log('brick ' + brick + ' bounce\nball left: ' + BALL_LEFT, ' ball right: ' + BALL_RIGHT + 
+            '\nball bottom: ' + BALL_BOTTOM, ' ball top: ' + BALL_TOP + 
+            '\nbrick left: ' + BRICK_LEFT + ' brick right: ' + BRICK_RIGHT + '\nbrick bottom: ' + BRICK_BOTTOM +
+            ' brick top: ' + BRICK_TOP);
+            // YES, REFLECT
+                // BALLDIRECTION = -BALLDIRECTION;
+                collide = true;
+                BRICKS[LEVEL][brick][4] = 0;
+                var audio = new Audio("Glass_Break-stephan_schutze-958181291.wav");
+                audio.play();
+                SCORE++;
+                document.getElementById('score').innerText = "Score " + SCORE;
+            }
+        }
+
+      return collide;
+    }
 
     window.onkeydown = function(e) {
+      BALL_X = BALLS[0][3][0];
+      BALL_Y = BALLS[0][3][1];
 
       if (STOPPED) {
         // restart the game
-        window.location.reload();
-      }
-
-      // TODO Part 3
-      if (e.code == 'ArrowLeft') {
-        if (OBJECTS[1][3][0] - STEP >= -.98) {
-          OBJECTS[1][3][0] -= STEP;
+        // window.location.reload();
+        if(LEVEL_WON){
+          LEVEL++;
+          if(LEVEL >= MAX_LEVELS)
+          {
+            NEW_GAME_PLUS += "+";
+            resetGame();
+          }
+          LEVEL_WON = false;
+          STOPPED = false;
+          document.getElementById('overlay').style.display = 'none';
+          document.getElementById('won').style.display = 'none';
+          document.getElementById('level clear').style.display = 'none';
+          document.getElementById('level').innerText = "Level " + (LEVEL + 1) + NEW_GAME_PLUS;
+        }
+        else if(LOST){
+          STOPPED = false;
+          LOST = false;
+          document.getElementById('overlay').style.display = 'none';
+          document.getElementById('lost').style.display = 'none';
+            resetGame();
+            NEW_GAME_PLUS = "";
+            SCORE = 0;
+            document.getElementById('level').innerText = "Level " + (LEVEL + 1) + NEW_GAME_PLUS;
+            document.getElementById('lives').innerText = "Lives " + LIVES;
         }
       }
-      else if (e.code == 'ArrowRight') {
-        if (OBJECTS[1][3][0] + STEP <= .98) {
-          OBJECTS[1][3][0] += STEP;
+      else{
+        if (e.code == 'ArrowLeft') {
+          if (PADDLES[1][3][0] - STEP * 1.5>= -.98) {
+            PADDLES[1][3][0] -= STEP * 1.5;
+          }
+        }
+        else if (e.code == 'ArrowRight') {
+          if (PADDLES[1][3][0] + STEP * 1.5 <= .98) {
+            PADDLES[1][3][0] += STEP * 1.5;
+          }
+        }
+        else if (e.code == 'ArrowUp') {
+          for (var brick = 0; brick < 32; brick++){
+              BRICKS[LEVEL][brick][4] = 0;
+            }
         }
       }
 
-      else if (e.code == 'Space') {
-        STOPPED = true;
+      // if (e.code == 'ArrowLeft') {
+      //   if (BALLS[0][3][0] - STEP * 0.1 >= -.98 && !collided(BALL_X - STEP * 0.1, BALL_Y)) {
+      //     BALLS[0][3][0] -= STEP * 0.1;
+      //   }
+      // }
+      // else if (e.code == 'ArrowRight') {
+      //   if (BALLS[0][3][0] + STEP * 0.1 <= .98 && !collided(BALL_X + STEP * 0.1, BALL_Y)) {
+      //     BALLS[0][3][0] += STEP * 0.1;
+      //   }
+      // }
+      // else if (e.code == 'ArrowDown') {
+      //   if (BALLS[0][3][1] - STEP * 0.1 >= -.98 && !collided(BALL_X, BALL_Y - STEP * 0.1)) {
+      //     BALLS[0][3][1] -= STEP * 0.1;
+      //   }
+      // }
+      // else if (e.code == 'ArrowUp') {
+      //   // console.log(collided());
+      //   if (BALLS[0][3][1] + STEP * 0.1 <= .98 && !collided(BALL_X, BALL_Y + STEP * 0.1)) {
+      //     BALLS[0][3][1] += STEP * 0.1;
+      //   }
+      // }
+      // OBJECTS[2][3][0] += Math.cos(BALLDIRECTION) * STEP * 0.05;
+      // OBJECTS[2][3][1] += Math.sin(BALLDIRECTION) * STEP * 0.05;
+      if (e.code == 'Space') {
+        if(STOPPED){
+          STOPPED = false;
+          // window.location.reload();
+        }
+        else
+          STOPPED = true;
       }
 
     }
@@ -540,13 +645,17 @@
 
     <div id='computerwrist'>
 
-      <span id='keen' class='score'>0</span>
+      <span id='level' class='score'>Level 1</span>
+
+      <span id='score' class='score'>SCORE 0</span>
       
-      <span id='comp' class='score'>0</span>
+      <span id='lives' class='score'>Lives 5</span>
 
       <div id='overlay'>
-        <img id='won' class='result' src='https://cs460.org/assignments/keen/won.png'>
-        <img id='lost' class='result' src='https://cs460.org/assignments/keen/lost.png'>
+        <img id='won' class='result' src='You win!.jpeg'>
+        <img id='lost' class='result' src='You lost!.jpeg'>
+        <img id='level clear' class='result' src='level clear.jpeg'>
+        
       </div>
 
       <canvas id='c'></canvas>
